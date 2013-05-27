@@ -1,0 +1,9 @@
+<resources>
+
+    <string name="extension_name">Whatsapp</string>
+    <string name="status">%1$d conversation updates</string>
+    <string name="application_name">Dashclock Whatsapp Extension</string>
+    <string name="extension_info">Displays information about your unread Whatsapp messages.</string>
+	<string name="message">%1$s</string>
+
+</resources>
