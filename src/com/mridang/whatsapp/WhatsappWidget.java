@@ -1,5 +1,8 @@
 package com.mridang.whatsapp;
 
+import java.io.IOException;
+import java.util.concurrent.TimeoutException;
+
 import android.annotation.SuppressLint;
 import android.util.Log;
 
@@ -7,6 +10,7 @@ import com.bugsense.trace.BugSenseHandler;
 import com.google.android.apps.dashclock.api.DashClockExtension;
 import com.google.android.apps.dashclock.api.ExtensionData;
 import com.stericson.RootTools.RootTools;
+import com.stericson.RootTools.exceptions.RootDeniedException;
 import com.stericson.RootTools.execution.Command;
 
 /*
@@ -65,8 +69,15 @@ public class WhatsappWidget extends DashClockExtension {
 				  edtInformation.visible(edtInformation.expandedBody() != null && edtInformation.expandedBody().split("\n").length > 0);
 				  Log.d("WhatsappWidget", (edtInformation.expandedBody() == null ? 0 : edtInformation.expandedBody().split("\n").length) + " unread");		
 
+				} catch (InterruptedException e) {
+					Log.w("WhatsappWidget", "Command execution interrupted", e);
+				} catch (IOException e) {
+					Log.w("WhatsappWidget", "Input output error", e);
+				} catch (TimeoutException e) {
+					Log.w("WhatsappWidget", "Command timed out", e);
+				} catch (RootDeniedException e) {
+					Log.w("WhatsappWidget", "Root access denied", e);
 				} catch (Exception e) {
-					Log.e("WhatsappWidget", "Encountered an error", e);
 					BugSenseHandler.sendException(e);
 				}
 
