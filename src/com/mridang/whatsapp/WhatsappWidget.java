@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.util.Log;
 
 import com.bugsense.trace.BugSenseHandler;
@@ -19,14 +21,21 @@ import com.stericson.RootTools.execution.Command;
 @SuppressLint("SdCardPath")
 public class WhatsappWidget extends DashClockExtension {
 
+	/* This is the launch intent using for starting the Hangouts application */
+	private Intent ittApplication;
+
 	/*
 	 * @see com.google.android.apps.dashclock.api.DashClockExtension#onCreate()
 	 */
 	public void onCreate() {
 
 		super.onCreate();
-		Log.d("WhatsappWidget", "Created");
+		Log.d("HangoutsWidget", "Created");
 		BugSenseHandler.initAndStartSession(this, "fb588bc8");
+
+		PackageManager pkgManager = getPackageManager();
+		ittApplication = pkgManager.getLaunchIntentForPackage("com.whatsapp");
+		ittApplication.addCategory(Intent.CATEGORY_LAUNCHER);
 
 	}
 
@@ -50,45 +59,66 @@ public class WhatsappWidget extends DashClockExtension {
 			Log.d("WhatsappWidget", "Checking if the contacts database exists");
 			if (RootTools.exists("/data/data/com.whatsapp/databases/wa.db")) {
 
-				Log.d("WhatsappWidget", "Reading unread messages from the databases");
-				try {
+				Log.d("WhatsappWidget", "Checking if Sqlite is installed");
+				if (RootTools.exists("/system/xbin/sqlite3") || RootTools.exists("/system/bin/sqlite3")) {
 
-					Command command = new Command(0, "cd  /data/data/com.whatsapp/databases/", "sqlite3 wa.db \"SELECT display_name FROM wa_contacts WHERE unseen_msg_count > 0;\"") {
+					Log.d("WhatsappWidget", "Reading unread messages from the databases");
+					try {
 
-						@Override
-						public void output(int id, String strLine) {
+						Command command = new Command(0, "cd  /data/data/com.whatsapp/databases/", "sqlite3 wa.db \"SELECT display_name, unseen_msg_count FROM wa_contacts WHERE unseen_msg_count > 0;\"") {
 
-							edtInformation.expandedBody((edtInformation.expandedBody() == null ? "" : edtInformation.expandedBody() + "\n") + strLine);
+							@Override
+							public void output(int id, String strLine) {
 
-						}
+								try {
 
-					};
-					RootTools.getShell(true).add(command).waitForFinish();
+									edtInformation.status(Integer.toString((edtInformation.status() == null ? 0 : Integer.parseInt(edtInformation.status())) + Integer.parseInt(strLine.split("\\|")[1]))); 
 
-					edtInformation.status(String.format(getString(R.string.status), (edtInformation.expandedBody() == null ? 0 : edtInformation.expandedBody().split("\n").length)));
-				  edtInformation.visible(edtInformation.expandedBody() != null && edtInformation.expandedBody().split("\n").length > 0);
-				  Log.d("WhatsappWidget", (edtInformation.expandedBody() == null ? 0 : edtInformation.expandedBody().split("\n").length) + " unread");		
+									if (edtInformation.expandedBody() == null || !edtInformation.expandedBody().contains(strLine)) {
+										edtInformation.expandedBody((edtInformation.expandedBody() == null ? "" : edtInformation.expandedBody() + "\n") + strLine.split("\\|")[0]);
+									}
 
-				} catch (InterruptedException e) {
-					Log.w("WhatsappWidget", "Command execution interrupted", e);
-				} catch (IOException e) {
-					Log.w("WhatsappWidget", "Input output error", e);
-				} catch (TimeoutException e) {
-					Log.w("WhatsappWidget", "Command timed out", e);
-				} catch (RootDeniedException e) {
-					Log.w("WhatsappWidget", "Root access denied", e);
-				} catch (Exception e) {
-					BugSenseHandler.sendException(e);
-				}
+								} catch (Exception e) {
+									BugSenseHandler.sendException(e);
+								}
+
+							}
+
+						};
+						RootTools.getShell(true).add(command).waitForFinish();
+
+						Integer intMessages = Integer.parseInt(edtInformation.status() == null ? "0" : edtInformation.status());
+						edtInformation.status(getResources().getQuantityString(R.plurals.message, intMessages, intMessages));
+						edtInformation.visible(intMessages > 0);
+						edtInformation.clickIntent(ittApplication);
+						Log.d("WhatsappWidget", (edtInformation.expandedBody() == null ? 0 : edtInformation.expandedBody().split("\n").length) + " unread");		
+
+					} catch (InterruptedException e) {
+						Log.w("WhatsappWidget", "Command execution interrupted", e);
+					} catch (IOException e) {
+						Log.w("WhatsappWidget", "Input output error", e);
+					} catch (TimeoutException e) {
+						Log.w("WhatsappWidget", "Command timed out", e);
+					} catch (RootDeniedException e) {
+						Log.w("WhatsappWidget", "Root access denied", e);
+					} catch (Exception e) {
+						Log.e("WhatsappWidget", "Encountered an error", e);
+						BugSenseHandler.sendException(e);
+					}
+
+				} else {
+					Log.w("WhatsappWidget", "Sqlite executable doesn't seem to be installed");
+				}	
 
 			} else {
-				Log.d("WhatsappWidget", "Contacts database doesn't exist");
+				Log.w("WhatsappWidget", "Contacts database doesn't exist");
 			}			
 
 		} else {
-			Log.d("WhatsappWidget", "The device is not rooted");
+			Log.w("WhatsappWidget", "The device is not rooted");
 		}
 
+		Log.d("WhatsappWidget", "Publishing update");
 		edtInformation.icon(R.drawable.ic_dashclock);
 		publishUpdate(edtInformation);
 		Log.d("WhatsappWidget", "Done");
