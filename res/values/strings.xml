@@ -1,5 +1,6 @@
 <resources>
 
+    <string name="unrooted_error">The WhatsApp extension for Dashclock requires a rooted device to work. Please uninstall the extension or root your device.</string>
     <string name="extension_name">Whatsapp</string>
     <string name="application_name">Dashclock Whatsapp Extension</string>
     <string name="extension_info">Displays information about your unread Whatsapp messages.</string>
