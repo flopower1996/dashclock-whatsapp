@@ -1,11 +1,15 @@
 package com.mridang.whatsapp;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.FileOutputStream;
 import java.util.concurrent.TimeoutException;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.AssetManager;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -34,9 +38,15 @@ public class WhatsappWidget extends DashClockExtension {
 		Log.d("HangoutsWidget", "Created");
 		BugSenseHandler.initAndStartSession(this, "fb588bc8");
 
-		PackageManager pkgManager = getPackageManager();
-		ittApplication = pkgManager.getLaunchIntentForPackage("com.whatsapp");
-		ittApplication.addCategory(Intent.CATEGORY_LAUNCHER);
+		try {
+
+			PackageManager pkgManager = getPackageManager();
+			ittApplication = pkgManager.getLaunchIntentForPackage("com.whatsapp");
+			ittApplication.addCategory(Intent.CATEGORY_LAUNCHER);
+
+		} catch (Exception e) {
+			return;
+		}
 
 	}
 
@@ -66,7 +76,7 @@ public class WhatsappWidget extends DashClockExtension {
 					Log.d("WhatsappWidget", "Reading unread messages from the databases");
 					try {
 
-						Command command = new Command(0, "cd  /data/data/com.whatsapp/databases/", "sqlite3 wa.db \"SELECT display_name, unseen_msg_count FROM wa_contacts WHERE unseen_msg_count > 0;\"") {
+						Command cmdQuery = new Command(0, "cd  /data/data/com.whatsapp/databases/", "sqlite3 wa.db \"SELECT display_name, unseen_msg_count FROM wa_contacts WHERE unseen_msg_count > 0;\"") {
 
 							@Override
 							public void output(int id, String strLine) {
@@ -86,12 +96,13 @@ public class WhatsappWidget extends DashClockExtension {
 							}
 
 						};
-						RootTools.getShell(true).add(command).waitForFinish();
+						RootTools.getShell(true).add(cmdQuery).waitForFinish();
 
 						Integer intMessages = Integer.parseInt(edtInformation.status() == null ? "0" : edtInformation.status());
 						edtInformation.status(getResources().getQuantityString(R.plurals.message, intMessages, intMessages));
 						edtInformation.visible(intMessages > 0);
-						edtInformation.clickIntent(ittApplication);
+						if (ittApplication != null)
+							edtInformation.clickIntent(ittApplication);
 						Log.d("WhatsappWidget", (edtInformation.expandedBody() == null ? 0 : edtInformation.expandedBody().split("\n").length) + " unread");		
 
 					} catch (InterruptedException e) {
@@ -108,8 +119,60 @@ public class WhatsappWidget extends DashClockExtension {
 					}
 
 				} else {
+
 					Log.w("WhatsappWidget", "Sqlite executable doesn't seem to be installed");
-					BugSenseHandler.sendException(new Exception("Sqlite executable doesn't seem to be installed"));
+					AssetManager assManager = this.getAssets();
+
+					Log.d("WhatsappWidget", "Unpacking the Sqlite binary");
+					InputStream istData = null;
+					OutputStream ostFile = null;
+					try {
+
+						istData = assManager.open("sqlite3");
+						String strFilename = "/data/data/" + this.getPackageName() + "/sqlite3";
+						ostFile = new FileOutputStream(strFilename);
+
+						byte[] buffer = new byte[1024];
+						int read;
+						while ((read = istData.read(buffer)) != -1) {
+							ostFile.write(buffer, 0, read);
+						}
+						istData.close();
+						istData = null;
+						ostFile.flush();
+						ostFile.close();
+						ostFile = null;
+
+						Log.d("WhatsappWidget", "Installled successfully");
+						
+					} catch (Exception e) {
+						Log.e("WhatsappWidget", "Error unpacking Sqlite", e);
+						BugSenseHandler.sendException(e);
+						return;
+					}
+
+					Log.d("WhatsappWidget", "Installing the Sqlite binary");
+					try {
+
+						Command cmdInstall = new Command(0, "mount -o remount,rw /system", "cp /data/data/" + this.getPackageName() + "/sqlite3 /system/bin/sqlite3", "chmod 4755 /system/bin/sqlite3", "mount -o remount,ro /system") {
+
+							@Override
+							public void output(int arg0, String strLine) {								
+
+								System.out.println(strLine);								
+
+							}
+
+						};
+						RootTools.getShell(true).add(cmdInstall).waitForFinish();
+						Log.d("WhatsappWidget", "Installled successfully");
+
+					} catch (Exception e) {
+						Log.e("WhatsappWidget", "Error installing Sqlite", e);
+						BugSenseHandler.sendException(e);
+						return;
+					}
+
 				}	
 
 			} else {
