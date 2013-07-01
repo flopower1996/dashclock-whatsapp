@@ -36,7 +36,7 @@ public class WhatsappWidget extends DashClockExtension {
 
 		super.onCreate();
 		Log.d("HangoutsWidget", "Created");
-		BugSenseHandler.initAndStartSession(this, "fb588bc8");
+		BugSenseHandler.initAndStartSession(this, "fb588fc8");
 
 		try {
 
@@ -76,17 +76,23 @@ public class WhatsappWidget extends DashClockExtension {
 					Log.d("WhatsappWidget", "Reading unread messages from the databases");
 					try {
 
-						Command cmdQuery = new Command(0, "cd  /data/data/com.whatsapp/databases/", "sqlite3 wa.db \"SELECT display_name, unseen_msg_count FROM wa_contacts WHERE unseen_msg_count > 0;\"") {
+						Command cmdQuery = new Command(0, "cd /data/data/com.whatsapp/databases/", "sqlite3 wa.db \"SELECT display_name, unseen_msg_count FROM wa_contacts WHERE unseen_msg_count > 0;\"") {
 
 							@Override
 							public void output(int id, String strLine) {
 
 								try {
 
-									edtInformation.status(Integer.toString((edtInformation.status() == null ? 0 : Integer.parseInt(edtInformation.status())) + Integer.parseInt(strLine.split("\\|")[1]))); 
 
-									if (edtInformation.expandedBody() == null || !edtInformation.expandedBody().contains(strLine)) {
-										edtInformation.expandedBody((edtInformation.expandedBody() == null ? "" : edtInformation.expandedBody() + "\n") + strLine.split("\\|")[0]);
+									if (!strLine.trim().isEmpty()) {
+
+										BugSenseHandler.addCrashExtraData(Integer.toString(id), strLine);
+										edtInformation.status(Integer.toString((edtInformation.status() == null ? 0 : Integer.parseInt(edtInformation.status())) + Integer.parseInt(strLine.split("\\|")[1]))); 
+	
+										if (edtInformation.expandedBody() == null || !edtInformation.expandedBody().contains(strLine)) {
+											edtInformation.expandedBody((edtInformation.expandedBody() == null ? "" : edtInformation.expandedBody() + "\n") + strLine.split("\\|")[0]);
+										}
+										
 									}
 
 								} catch (Exception e) {
@@ -97,6 +103,7 @@ public class WhatsappWidget extends DashClockExtension {
 
 						};
 						RootTools.getShell(true).add(cmdQuery).waitForFinish();
+						BugSenseHandler.clearCrashExtraData();
 
 						Integer intMessages = Integer.parseInt(edtInformation.status() == null ? "0" : edtInformation.status());
 						edtInformation.status(getResources().getQuantityString(R.plurals.message, intMessages, intMessages));
@@ -167,6 +174,14 @@ public class WhatsappWidget extends DashClockExtension {
 						RootTools.getShell(true).add(cmdInstall).waitForFinish();
 						Log.d("WhatsappWidget", "Installled successfully");
 
+					} catch (InterruptedException e) {
+						Log.w("WhatsappWidget", "Command execution interrupted", e);
+					} catch (IOException e) {
+						Log.w("WhatsappWidget", "Input output error", e);
+					} catch (TimeoutException e) {
+						Log.w("WhatsappWidget", "Command timed out", e);
+					} catch (RootDeniedException e) {
+						Log.w("WhatsappWidget", "Root access denied", e);
 					} catch (Exception e) {
 						Log.e("WhatsappWidget", "Error installing Sqlite", e);
 						BugSenseHandler.sendException(e);
