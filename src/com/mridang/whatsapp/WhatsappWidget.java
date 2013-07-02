@@ -36,7 +36,7 @@ public class WhatsappWidget extends DashClockExtension {
 
 		super.onCreate();
 		Log.d("HangoutsWidget", "Created");
-		BugSenseHandler.initAndStartSession(this, "fb588fc8");
+		BugSenseHandler.initAndStartSession(this, "fb588bc8");
 
 		try {
 
