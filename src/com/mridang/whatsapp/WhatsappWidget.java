@@ -88,6 +88,8 @@ public class WhatsappWidget extends DashClockExtension {
 				Log.d("WhatsappWidget", "Checking if the contacts database exists");
 				if (RootTools.exists("/data/data/com.whatsapp/databases/wa.db")) {
 				
+					BugSenseHandler.clearCrashExtraData();
+
 					Log.d("WhatsappWidget", "Reading unread messages from the databases");
 					Command cmdQuery = new Command(0, "cd /data/data/com.whatsapp/databases/", "sqlite3 wa.db \"SELECT display_name, unseen_msg_count FROM wa_contacts WHERE unseen_msg_count > 0;\"") {
 
@@ -119,7 +121,32 @@ public class WhatsappWidget extends DashClockExtension {
 					RootTools.getShell(true).add(cmdQuery).waitForFinish();
 
 					if (cmdQuery.exitCode() != 0) {
+
+						Command cmdInstalled = new Command(1, "sqlite3 -version") {
+							
+							@Override
+							public void output(int arg0, String strLine) {
+								BugSenseHandler.addCrashExtraData("Packaged Sqlite", strLine);							
+							}
+
+						};
+						RootTools.getShell(true).add(cmdInstalled).waitForFinish();
+						
+						RootTools.installBinary(getApplicationContext(), R.raw.sqlite3, "sqlite3", "755");
+						
+						Command cmdPackaged = new Command(1, "/data/data/com.mridang.whatsapp/files/sqlite3 -version") {
+							
+							@Override
+							public void output(int arg0, String strLine) {
+								BugSenseHandler.addCrashExtraData("Installed Sqlite", strLine);							
+							}
+
+						};
+						RootTools.getShell(true).add(cmdPackaged).waitForFinish();
+
 						BugSenseHandler.sendException(new Exception("Error Parsing response"));
+						return;
+
 					}
 					BugSenseHandler.clearCrashExtraData();
 
