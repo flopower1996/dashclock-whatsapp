@@ -91,7 +91,7 @@ public class WhatsappWidget extends DashClockExtension {
 					BugSenseHandler.clearCrashExtraData();
 
 					Log.d("WhatsappWidget", "Reading unread messages from the databases");
-					Command cmdQuery = new Command(0, "cd /data/data/com.whatsapp/databases/", "sqlite3 wa.db \"SELECT display_name, unseen_msg_count FROM wa_contacts WHERE unseen_msg_count > 0;\"") {
+					Command cmdQuery = new Command(0, "sqlite3 /data/data/com.whatsapp/databases/wa.db \"SELECT display_name, unseen_msg_count FROM wa_contacts WHERE unseen_msg_count > 0;\"") {
 
 						@Override
 						public void output(int id, String strLine) {
@@ -99,8 +99,8 @@ public class WhatsappWidget extends DashClockExtension {
 							Log.d("WhatsappWidget", strLine);
 							try {
 
-								BugSenseHandler.addCrashExtraData(Integer.toString(id), strLine);
-								
+								BugSenseHandler.addCrashExtraData(Integer.toString(BugSenseHandler.getCrashExtraData().size()), strLine);
+
 								if (!strLine.trim().isEmpty()) {
 
 									edtInformation.status(Integer.toString((edtInformation.status() == null ? 0 : Integer.parseInt(edtInformation.status())) + Integer.parseInt(strLine.split("\\|")[1]))); 
@@ -120,13 +120,13 @@ public class WhatsappWidget extends DashClockExtension {
 					};
 					RootTools.getShell(true).add(cmdQuery).waitForFinish();
 
-					if (cmdQuery.exitCode() != 0) {
+					if (cmdQuery.exitCode() == -1) {
 
 						Command cmdInstalled = new Command(1, "sqlite3 -version") {
 							
 							@Override
 							public void output(int arg0, String strLine) {
-								BugSenseHandler.addCrashExtraData("Packaged Sqlite", strLine);							
+								BugSenseHandler.addCrashExtraData("Installed", strLine);							
 							}
 
 						};
@@ -138,7 +138,7 @@ public class WhatsappWidget extends DashClockExtension {
 							
 							@Override
 							public void output(int arg0, String strLine) {
-								BugSenseHandler.addCrashExtraData("Installed Sqlite", strLine);							
+								BugSenseHandler.addCrashExtraData("Packaged", strLine);							
 							}
 
 						};
