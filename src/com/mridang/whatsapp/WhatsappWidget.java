@@ -75,23 +75,13 @@ public class WhatsappWidget extends DashClockExtension {
 
 				}
 
-				Log.d("WhatsappWidget", "Checking if Sqlite is installed");
-				if (!RootTools.exists("/system/xbin/sqlite3") && !RootTools.exists("/system/bin/sqlite3")) {
-					
-					Log.d("WhatsappWidget", "Installing the binaries");
-					RootTools.installBinary(getApplicationContext(), R.raw.sqlite3, "sqlite3", "755");
-					RootTools.copyFile("/data/data/com.mridang.whatsapp/files/sqlite3", "/system/bin/sqlite3", true, true);
-					Log.d("WhatsappWidget", "Installed");
-
-				}
-
 				Log.d("WhatsappWidget", "Checking if the contacts database exists");
 				if (RootTools.exists("/data/data/com.whatsapp/databases/wa.db")) {
 				
 					BugSenseHandler.clearCrashExtraData();
 
 					Log.d("WhatsappWidget", "Reading unread messages from the databases");
-					Command cmdQuery = new Command(0, "sqlite3 /data/data/com.whatsapp/databases/wa.db \"SELECT display_name, unseen_msg_count FROM wa_contacts WHERE unseen_msg_count > 0;\"") {
+					Command cmdSystem = new Command(0, "sqlite3 /data/data/com.whatsapp/databases/wa.db \"SELECT display_name, unseen_msg_count FROM wa_contacts WHERE unseen_msg_count > 0;\"") {
 
 						@Override
 						public void output(int id, String strLine) {
@@ -99,7 +89,7 @@ public class WhatsappWidget extends DashClockExtension {
 							Log.d("WhatsappWidget", strLine);
 							try {
 
-								BugSenseHandler.addCrashExtraData(Integer.toString(BugSenseHandler.getCrashExtraData().size()), strLine);
+								BugSenseHandler.addCrashExtraData("System " + Integer.toString(BugSenseHandler.getCrashExtraData().size()), strLine);
 
 								if (!strLine.trim().isEmpty()) {
 
@@ -118,34 +108,67 @@ public class WhatsappWidget extends DashClockExtension {
 						}
 
 					};
-					RootTools.getShell(true).add(cmdQuery).waitForFinish();
+					RootTools.getShell(true).add(cmdSystem).waitForFinish();
 
-					if (cmdQuery.exitCode() == -1) {
+					if (cmdSystem.exitCode() == -1) {
+						
+						Command cmdCustom = new Command(0, "/data/data/com.mridang.whatsapp/files/sqlite3 /data/data/com.whatsapp/databases/wa.db \"SELECT display_name, unseen_msg_count FROM wa_contacts WHERE unseen_msg_count > 0;\"") {
 
-						Command cmdInstalled = new Command(1, "sqlite3 -version") {
-							
 							@Override
-							public void output(int arg0, String strLine) {
-								BugSenseHandler.addCrashExtraData("Installed", strLine);							
+							public void output(int id, String strLine) {
+
+								Log.d("WhatsappWidget", strLine);
+								try {
+
+									BugSenseHandler.addCrashExtraData("Custom " + Integer.toString(BugSenseHandler.getCrashExtraData().size()), strLine);
+
+									if (!strLine.trim().isEmpty()) {
+
+										edtInformation.status(Integer.toString((edtInformation.status() == null ? 0 : Integer.parseInt(edtInformation.status())) + Integer.parseInt(strLine.split("\\|")[1]))); 
+
+										if (edtInformation.expandedBody() == null || !edtInformation.expandedBody().contains(strLine)) {
+											edtInformation.expandedBody((edtInformation.expandedBody() == null ? "" : edtInformation.expandedBody() + "\n") + strLine.split("\\|")[0]);
+										}
+
+									}
+
+								} catch (Exception e) {
+									setExitCode(-1);
+								}
+
 							}
 
 						};
-						RootTools.getShell(true).add(cmdInstalled).waitForFinish();
+						RootTools.getShell(true).add(cmdCustom).waitForFinish();
 						
-						RootTools.installBinary(getApplicationContext(), R.raw.sqlite3, "sqlite3", "755");
-						
-						Command cmdPackaged = new Command(1, "/data/data/com.mridang.whatsapp/files/sqlite3 -version") {
+						if (cmdSystem.exitCode() == -1) {
+
+							Command cmdInstalled = new Command(1, "sqlite3 -version") {
+								
+								@Override
+								public void output(int arg0, String strLine) {
+									BugSenseHandler.addCrashExtraData("Installed", strLine);							
+								}
+	
+							};
+							RootTools.getShell(true).add(cmdInstalled).waitForFinish();
 							
-							@Override
-							public void output(int arg0, String strLine) {
-								BugSenseHandler.addCrashExtraData("Packaged", strLine);							
-							}
-
-						};
-						RootTools.getShell(true).add(cmdPackaged).waitForFinish();
-
-						BugSenseHandler.sendException(new Exception("Error Parsing response"));
-						return;
+							RootTools.installBinary(getApplicationContext(), R.raw.sqlite3, "sqlite3", "755");
+							
+							Command cmdPackaged = new Command(1, "/data/data/com.mridang.whatsapp/files/sqlite3 -version") {
+								
+								@Override
+								public void output(int arg0, String strLine) {
+									BugSenseHandler.addCrashExtraData("Packaged", strLine);							
+								}
+	
+							};
+							RootTools.getShell(true).add(cmdPackaged).waitForFinish();
+	
+							BugSenseHandler.sendException(new Exception("Error Parsing response"));
+							return;
+							
+						}
 
 					}
 					BugSenseHandler.clearCrashExtraData();
