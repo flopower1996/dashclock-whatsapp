@@ -12,6 +12,7 @@ import android.widget.Toast;
 import com.bugsense.trace.BugSenseHandler;
 import com.google.android.apps.dashclock.api.DashClockExtension;
 import com.google.android.apps.dashclock.api.ExtensionData;
+import com.mridang.whatsapp.R;
 import com.stericson.RootTools.RootTools;
 import com.stericson.RootTools.exceptions.RootDeniedException;
 import com.stericson.RootTools.execution.Command;
@@ -22,7 +23,7 @@ import com.stericson.RootTools.execution.Command;
 @SuppressLint("SdCardPath")
 public class WhatsappWidget extends DashClockExtension {
 
-	/* This is the launch intent using for starting the Hangouts application */
+	/* This is the launch intent using for starting the Whatsapp application */
 	private Intent ittApplication;
 
 	/*
@@ -31,7 +32,7 @@ public class WhatsappWidget extends DashClockExtension {
 	public void onCreate() {
 
 		super.onCreate();
-		Log.d("HangoutsWidget", "Created");
+		Log.d("WhatsappWidget", "Created");
 		BugSenseHandler.initAndStartSession(this, "fb588bc8");
 
 		try {
@@ -41,7 +42,7 @@ public class WhatsappWidget extends DashClockExtension {
 			ittApplication.addCategory(Intent.CATEGORY_LAUNCHER);
 
 		} catch (Exception e) {
-			return;
+			BugSenseHandler.sendException(e);
 		}
 
 	}
@@ -86,7 +87,7 @@ public class WhatsappWidget extends DashClockExtension {
 						@Override
 						public void output(int id, String strLine) {
 
-							Log.d("WhatsappWidget", strLine);
+							Log.v("WhatsappWidget", strLine);
 							try {
 
 								BugSenseHandler.addCrashExtraData("System " + Integer.toString(BugSenseHandler.getCrashExtraData().size()), strLine);
@@ -117,7 +118,7 @@ public class WhatsappWidget extends DashClockExtension {
 							@Override
 							public void output(int id, String strLine) {
 
-								Log.d("WhatsappWidget", strLine);
+								Log.v("WhatsappWidget", strLine);
 								try {
 
 									BugSenseHandler.addCrashExtraData("Custom " + Integer.toString(BugSenseHandler.getCrashExtraData().size()), strLine);
@@ -182,6 +183,7 @@ public class WhatsappWidget extends DashClockExtension {
 
 					} else {
 						Log.w("WhatsappWidget", "Contacts database doesn't exist");
+						Toast.makeText(getApplicationContext(), R.string.database_missing, Toast.LENGTH_LONG).show();
 					}	
 					
 				} catch (InterruptedException e) {
