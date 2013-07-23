@@ -1,5 +1,6 @@
 package com.mridang.whatsapp;
 
+import java.io.File;
 import java.util.ArrayList;
 
 import android.annotation.SuppressLint;
@@ -53,20 +54,14 @@ public class WhatsappWidget extends DashClockExtension {
 				try {
 
 					Log.d("WhatsappWidget", "Checking and extracting libraries");
-					if (!RootTools.exists("/data/data/com.mridang.whatsapp/files/libncurses.so")) {
-
-						RootTools.installBinary(getApplicationContext(), R.raw.libncurses, "libncurses.so", "644");
-						Log.d("WhatsappWidget", "Installed libncurses");
-
-					}
+					new File(getApplicationContext().getFilesDir(), "libncurses.so").delete();
+					RootTools.installBinary(getApplicationContext(), R.raw.libncurses, "libncurses.so", "755");
+					Log.d("WhatsappWidget", "Installed libncurses");
 
 					Log.d("WhatsappWidget", "Checking and extracting binaries");
-					if (!RootTools.exists("/data/data/com.mridang.whatsapp/files/sqlite3")) {
-
-						RootTools.installBinary(getApplicationContext(), R.raw.libncurses, "sqlite3", "644");
-						Log.d("WhatsappWidget", "Installed sqlite3");
-
-					}
+					new File(getApplicationContext().getFilesDir(), "sqlite3").delete();
+					RootTools.installBinary(getApplicationContext(), R.raw.sqlite3, "sqlite3", "755");
+					Log.d("WhatsappWidget", "Installed sqlite3");
 
 				} catch (Exception e) {
 					Log.e("WhatsappWidget", "Error extracting libraries and binairies", e);
